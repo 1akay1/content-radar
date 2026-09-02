@@ -42,6 +42,7 @@ from datetime import datetime, timedelta, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(HERE, "config.json")
 OUT_PATH = os.path.join(HERE, "radar_output.json")
+VERLAUF_PATH = os.path.join(HERE, "verlauf.json")
 
 APIFY_RUN_URL = "https://api.apify.com/v2/acts/{actor}/run-sync-get-dataset-items?token={token}"
 
@@ -196,28 +197,48 @@ def hole_posts(cfg, token, accounts):
         return []
 
 
-def hole_follower(cfg, token, accounts):
-    """Ein Ergebnis je Account, nur fuer die Follower-Zahl. Billig."""
+def hole_profile(cfg, token, accounts):
+    """Ein Ergebnis je Account: Follower, Beitragszahl, Name. Billig (1 Kredit)."""
     if not accounts:
         return {}
-    payload = {
-        "directUrls": [f"https://www.instagram.com/{a}/" for a in accounts],
-        "resultsType": "details",
-        "resultsLimit": 1,
-    }
-    print(f"-> Follower: {len(accounts)} Profile")
-    try:
-        items = apify_call(cfg["apify"]["actor"], token, payload)
-    except (urllib.error.URLError, urllib.error.HTTPError) as e:
-        print(f"! Follower-Abruf fehlgeschlagen: {e}")
-        return {}
+
+    def abruf(liste):
+        payload = {
+            "directUrls": [f"https://www.instagram.com/{a}/" for a in liste],
+            "resultsType": "details",
+            "resultsLimit": 1,
+        }
+        try:
+            return apify_call(cfg["apify"]["actor"], token, payload)
+        except (urllib.error.URLError, urllib.error.HTTPError) as e:
+            print(f"! Profil-Details fehlgeschlagen: {e}")
+            return []
+
     karte = {}
-    for it in items:
-        name = (it.get("username") or "").lower()
-        f = zahl(it.get("followersCount")) or zahl(it.get("followersCount", 0))
-        if name and f:
-            karte[name] = f
-    print(f"   {len(karte)} Follower-Zahlen erhalten")
+
+    def sammle(items):
+        for it in items:
+            name = (it.get("username") or "").lower()
+            if not name:
+                continue
+            karte[name] = {
+                "follower": zahl(it.get("followersCount")),
+                "folgt": zahl(it.get("followsCount")),
+                "beitraege": zahl(it.get("postsCount")),
+                "name": it.get("fullName") or "",
+                "verifiziert": bool(it.get("verified")),
+            }
+
+    print(f"-> Profil-Details: {len(accounts)} Accounts")
+    sammle(abruf(accounts))
+
+    # Instagram liefert nicht immer alle auf einmal - fehlende einmal nachfassen
+    fehlend = [a for a in accounts if a not in karte]
+    if fehlend:
+        print(f"   {len(fehlend)} fehlen, zweiter Versuch")
+        sammle(abruf(fehlend))
+
+    print(f"   {len(karte)} von {len(accounts)} Profilen erhalten")
     return karte
 
 
@@ -452,6 +473,142 @@ def baue_ideen(reels):
     return ideen
 
 
+
+# ---------------------------------------------------------------- Eigene Zahlen
+
+def lade_verlauf():
+    if not os.path.exists(VERLAUF_PATH):
+        return []
+    try:
+        with open(VERLAUF_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (ValueError, OSError):
+        return []
+
+
+def aktualisiere_verlauf(profile, meine):
+    """Haelt eine Wochenhistorie der eigenen Accounts. Erst dadurch entsteht
+    ein Wachstumsverlauf - Instagram gibt die Vergangenheit nicht her."""
+    verlauf = lade_verlauf()
+    heute = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    stand = {a: {"follower": profile[a]["follower"], "beitraege": profile[a]["beitraege"]}
+             for a in meine if a in profile}
+    if not stand:
+        return verlauf
+    verlauf = [e for e in verlauf if e.get("datum") != heute]
+    verlauf.append({"datum": heute, "accounts": stand,
+                    "follower_gesamt": sum(v["follower"] for v in stand.values())})
+    verlauf.sort(key=lambda e: e["datum"])
+    verlauf = verlauf[-60:]
+    with open(VERLAUF_PATH, "w", encoding="utf-8") as f:
+        json.dump(verlauf, f, ensure_ascii=False, indent=2)
+    return verlauf
+
+
+def rate(r):
+    """Interaktionen je 100 Aufrufe."""
+    return round((r["likes"] + r["kommentare"]) / r["wert"] * 100, 2) if r["wert"] else 0.0
+
+
+def wachstum(verlauf, tage):
+    """Follower-Differenz gegenueber dem Stand vor n Tagen, None wenn zu jung."""
+    if len(verlauf) < 2:
+        return None
+    heute = parse_datum(verlauf[-1]["datum"] + "T00:00:00+00:00")
+    ziel = heute - timedelta(days=tage)
+    frueher = [e for e in verlauf[:-1]
+               if parse_datum(e["datum"] + "T00:00:00+00:00") <= ziel]
+    basis = frueher[-1] if frueher else verlauf[0]
+    return verlauf[-1]["follower_gesamt"] - basis["follower_gesamt"]
+
+
+def profil_kennzahlen(reels, meine, profile, verlauf):
+    eigene = [r for r in reels if r["account"] in meine]
+    letzte30 = [r for r in eigene if r["alter_tage"] <= 30]
+    werte = [r["wert"] for r in eigene if r["wert"] > 0]
+
+    je_account = []
+    for a in sorted(meine):
+        p = profile.get(a, {})
+        seine = [r for r in eigene if r["account"] == a]
+        sw = [r["wert"] for r in seine if r["wert"] > 0]
+        je_account.append({
+            "handle": a,
+            "follower": p.get("follower", 0),
+            "beitraege": p.get("beitraege", 0),
+            "reels_erfasst": len(seine),
+            "median": int(statistics.median(sw)) if sw else 0,
+            "bestes": max(sw) if sw else 0,
+        })
+
+    return {
+        "follower": sum(a["follower"] for a in je_account),
+        "follower_bekannt": any(a["follower"] for a in je_account),
+        "beitraege": sum(a["beitraege"] for a in je_account),
+        "wachstum_7": wachstum(verlauf, 7),
+        "wachstum_30": wachstum(verlauf, 30),
+        "verlauf_punkte": len(verlauf),
+        "reels_erfasst": len(eigene),
+        "reels_30_tage": len(letzte30),
+        "views_30_tage": sum(r["wert"] for r in letzte30),
+        "views_gesamt": sum(werte),
+        "median": int(statistics.median(werte)) if werte else 0,
+        "schnitt": int(statistics.mean(werte)) if werte else 0,
+        "bestes": max(werte) if werte else 0,
+        "schnitt_likes": int(statistics.mean([r["likes"] for r in eigene])) if eigene else 0,
+        "interaktionsrate": round(statistics.median([rate(r) for r in eigene]), 2) if eigene else 0.0,
+        "laenge_median": round(statistics.median([r["dauer"] for r in eigene if r["dauer"]]), 1)
+                         if any(r["dauer"] for r in eigene) else None,
+        "accounts": je_account,
+    }
+
+
+def baue_vergleich(reels, meine):
+    """Stellt die eigenen Reels den Ausreissern der Nische gegenueber."""
+    eigene = [r for r in reels if r["account"] in meine]
+    fremde = [r for r in reels if r["account"] not in meine]
+    outlier = [r for r in fremde if r["ist_outlier"]] or sorted(
+        fremde, key=lambda r: -r["score"])[:8]
+
+    def verteilung(liste, key):
+        z = {}
+        for r in liste:
+            z[r[key]] = z.get(r[key], 0) + 1
+        gesamt = len(liste) or 1
+        return {k: round(v / gesamt * 100) for k, v in z.items()}
+
+    def med(liste, f):
+        w = [f(r) for r in liste if f(r)]
+        return round(statistics.median(w), 1) if w else None
+
+    hook_ich, hook_sie = verteilung(eigene, "hook_typ"), verteilung(outlier, "hook_typ")
+    form_ich, form_sie = verteilung(eigene, "format"), verteilung(outlier, "format")
+
+    def zeilen(ich, sie):
+        return sorted(
+            ({"name": k, "ich": ich.get(k, 0), "nische": sie.get(k, 0)}
+             for k in set(ich) | set(sie)),
+            key=lambda x: -(x["nische"] + x["ich"]))
+
+    luecken = [k for k, v in sorted(hook_sie.items(), key=lambda x: -x[1])
+               if v >= 15 and hook_ich.get(k, 0) == 0]
+    luecken += [k for k, v in sorted(form_sie.items(), key=lambda x: -x[1])
+                if v >= 15 and form_ich.get(k, 0) == 0 and k != "sonstiges"]
+
+    return {
+        "basis_eigene": len(eigene),
+        "basis_nische": len(outlier),
+        "hooks": zeilen(hook_ich, hook_sie),
+        "formate": zeilen(form_ich, form_sie),
+        "laenge_ich": med(eigene, lambda r: r["dauer"]),
+        "laenge_nische": med(outlier, lambda r: r["dauer"]),
+        "rate_ich": med(eigene, rate),
+        "rate_nische": med(outlier, rate),
+        "rate_alle": med([r for r in fremde if r["wert"] > 0], rate),
+        "luecken": luecken[:4],
+    }
+
+
 # ---------------------------------------------------------------- Demo
 
 def demo_daten():
@@ -495,7 +652,7 @@ def demo_daten():
 
 # ---------------------------------------------------------------- Ausgabe
 
-def baue_output(reels, stats, muster, ideen, cfg, quelle, metrik, neue):
+def baue_output(reels, stats, muster, ideen, cfg, quelle, metrik, neue, profil, vergleich, verlauf):
     meine = set(eigene_handles(cfg))
     eigene = [r for r in reels if r["account"] in meine]
     fremde = [r for r in reels if r["account"] not in meine]
@@ -520,6 +677,9 @@ def baue_output(reels, stats, muster, ideen, cfg, quelle, metrik, neue):
         "reels": reels[:120],
         "accounts": sorted(stats, key=lambda a: -a["median_views"]),
         "muster": muster,
+        "profil": profil,
+        "vergleich": vergleich,
+        "verlauf": verlauf,
         "ideen": ideen,
         "kapazitaet": cfg["kapazitaet"],
     }
@@ -534,7 +694,7 @@ def main():
     args = p.parse_args()
 
     cfg = lade_config()
-    quelle, kandidaten, follower_karte = "apify", [], {}
+    quelle, kandidaten, follower_karte, profile = "apify", [], {}, {}
 
     if args.demo:
         items, quelle = demo_daten(), "demo"
@@ -563,7 +723,8 @@ def main():
             print("! Nichts zu scannen. Accounts in config.json eintragen oder --discover nutzen.")
             sys.exit(1)
 
-        follower_karte = hole_follower(cfg, token, alle)
+        profile = hole_profile(cfg, token, alle)
+        follower_karte = {k: v["follower"] for k, v in profile.items() if v["follower"]}
         items = hole_posts(cfg, token, alle)
 
     reels = normalisiere(items, follower_karte)
@@ -583,9 +744,14 @@ def main():
 
     reels, stats = berechne_scores(reels, cfg, metrik)
     neue = uebernehme_accounts(cfg, stats, set(kandidaten)) if kandidaten else []
+    meine = set(eigene_handles(cfg))
+    verlauf = aktualisiere_verlauf(profile, meine) if profile else lade_verlauf()
     muster = finde_muster(reels, cfg)
+    profil = profil_kennzahlen(reels, meine, profile, verlauf)
+    vergleich = baue_vergleich(reels, meine)
     ideen = baue_ideen(reels)
-    out = baue_output(reels, stats, muster, ideen, cfg, quelle, metrik, neue)
+    out = baue_output(reels, stats, muster, ideen, cfg, quelle, metrik, neue,
+                      profil, vergleich, verlauf)
 
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)

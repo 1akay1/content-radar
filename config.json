@@ -6,12 +6,7 @@
   ],
   "watchlist": {
     "_kommentar": "Wird woechentlich gescannt. Startbelegung stammt aus dem ersten Hashtag-Lauf und ist ungeprueft - nach dem ersten echten Scan aussortieren, was nicht passt.",
-    "regional": [
-      "osipova.studio",
-      "studiocimi",
-      "medienproduktion2.0",
-      "michel_fotofilm"
-    ],
+    "regional": [],
     "branche": [
       "filmovo.de",
       "purevisuals.de",
@@ -58,12 +53,13 @@
     "halbwertszeit_tage": 21
   },
   "kapazitaet": {
-    "_kommentar": "Der Drehplan plant nie mehr ein als das.",
+    "_kommentar": "Der Drehplan plant nie mehr ein als das. follower_ziel steuert nur den Fortschrittsring im Dashboard.",
     "posts_pro_woche": 2,
     "slots": [
       "Dienstag",
       "Freitag"
-    ]
+    ],
+    "follower_ziel": 1000
   },
   "apify": {
     "actor": "apify~instagram-scraper",
