@@ -1,14 +1,12 @@
 {
   "_kommentar": "AYBORN Content-Radar. Handles ohne @. Alles hier ist frei anpassbar.",
-  "eigener_account": "ayborn.media",
+  "eigene_accounts": [
+    "akay_sn",
+    "ayborn.media"
+  ],
   "watchlist": {
     "_kommentar": "Wird woechentlich gescannt. Startbelegung stammt aus dem ersten Hashtag-Lauf und ist ungeprueft - nach dem ersten echten Scan aussortieren, was nicht passt.",
-    "regional": [
-      "osipova.studio",
-      "studiocimi",
-      "medienproduktion2.0",
-      "michel_fotofilm"
-    ],
+    "regional": [],
     "branche": [
       "filmovo.de",
       "purevisuals.de",

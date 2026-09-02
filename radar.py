@@ -146,6 +146,14 @@ def handle(it):
     return (it.get("ownerUsername") or (it.get("owner") or {}).get("username") or "").lower()
 
 
+def eigene_handles(cfg):
+    """Eigene Accounts. Akzeptiert einen String oder eine Liste."""
+    w = cfg.get("eigene_accounts") or cfg.get("eigener_account") or []
+    if isinstance(w, str):
+        w = [w]
+    return [a.strip().lstrip("@").lower() for a in w if a and a.strip()]
+
+
 def watchlist_handles(cfg):
     raus = []
     for schluessel, gruppe in cfg["watchlist"].items():
@@ -488,15 +496,16 @@ def demo_daten():
 # ---------------------------------------------------------------- Ausgabe
 
 def baue_output(reels, stats, muster, ideen, cfg, quelle, metrik, neue):
-    eigener = (cfg.get("eigener_account") or "").lower()
-    eigene = [r for r in reels if r["account"] == eigener]
-    fremde = [r for r in reels if r["account"] != eigener]
+    meine = set(eigene_handles(cfg))
+    eigene = [r for r in reels if r["account"] in meine]
+    fremde = [r for r in reels if r["account"] not in meine]
     werte = [r["wert"] for r in fremde if r["wert"] > 0]
 
     return {
         "meta": {
             "woche": kw_label(), "erstellt": iso_now(), "quelle": quelle,
-            "metrik": metrik, "eigener_account": eigener,
+            "metrik": metrik, "eigene_accounts": sorted(meine),
+            "eigener_account": (sorted(meine)[0] if meine else ""),
             "accounts_gescannt": len(stats), "reels_gescannt": len(reels),
             "neue_accounts": neue, "demo": quelle == "demo",
         },
@@ -540,9 +549,9 @@ def main():
             sys.exit(1)
 
         beobachtet = watchlist_handles(cfg)
-        eigener = (cfg.get("eigener_account") or "").strip().lstrip("@").lower()
-        if eigener and eigener not in beobachtet:
-            beobachtet.append(eigener)
+        for eigen in eigene_handles(cfg):
+            if eigen not in beobachtet:
+                beobachtet.append(eigen)
 
         if args.discover:
             kandidaten = finde_kandidaten(
