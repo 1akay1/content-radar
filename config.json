@@ -1,42 +1,53 @@
 {
-  "_kommentar": "AYBORN Content-Radar - Konfiguration. Handles ohne @. Alles hier ist frei anpassbar.",
+  "_kommentar": "AYBORN Content-Radar. Handles ohne @. Alles hier ist frei anpassbar.",
 
   "eigener_account": "ayborn.media",
 
   "watchlist": {
-    "_kommentar": "Accounts, die woechentlich gescannt werden. Start leer/klein - die Discovery unten fuellt sie automatisch auf.",
+    "_kommentar": "Wird woechentlich gescannt. Startbelegung stammt aus dem ersten Hashtag-Lauf und ist ungeprueft - nach dem ersten echten Scan aussortieren, was nicht passt.",
     "regional": [],
-    "branche": [],
+    "branche": [
+      "filmovo.de",
+      "purevisuals.de",
+      "liquid_filmproduktion",
+      "rolin.media",
+      "vavo.media",
+      "dannyvossmedien",
+      "captisfilm",
+      "rarymotion",
+      "lemiz_creatives",
+      "primecontent.video"
+    ],
     "referenz": []
   },
 
   "discovery": {
-    "_kommentar": "Findet neue Accounts selbst, statt dass du 16 Handles raten musst. Ergebnisse landen als Vorschlaege im Dashboard.",
+    "_kommentar": "Zwei Stufen: Hashtags liefern nur Kandidaten-Namen (dort gibt es keine Views), die besten werden danach als Profile richtig gemessen.",
     "aktiv": true,
     "hashtags": [
-      "schwerin",
-      "mecklenburgvorpommern",
-      "videografschwerin",
       "imagefilm",
       "videoproduktion",
       "unternehmensfilm",
-      "hochzeitsvideo",
-      "dronefootage"
+      "werbefilm",
+      "filmproduktion",
+      "videografdeutschland",
+      "mecklenburgvorpommern",
+      "schwerin"
     ],
-    "orte": ["Schwerin", "Rostock", "Wismar", "Lübeck"],
     "max_pro_hashtag": 15,
-    "min_follower": 800,
+    "max_kandidaten": 10,
+    "min_follower": 500,
     "max_follower": 400000
   },
 
   "scan": {
-    "reels_pro_account": 12,
+    "reels_pro_account": 10,
     "zeitfenster_tage": 60,
-    "_kommentar": "12 Reels x Accounts = Kosten. 16 Accounts x 12 = 192 Ergebnisse/Woche = ca. 0,52 USD - passt in den Apify-Free-Tier (5 USD/Monat)."
+    "_kommentar": "16 Accounts x 10 Beitraege + Follower-Abruf = ca. 176 Ergebnisse = 0,48 USD pro Woche."
   },
 
   "scoring": {
-    "_kommentar": "So wird ein Outlier definiert. Ein Reel ist ein Outlier, wenn es den Median seines EIGENEN Accounts deutlich schlaegt - dadurch zaehlen auch Banger von kleinen Accounts.",
+    "_kommentar": "Ein Reel gilt als Ausreisser, wenn es den Median seines EIGENEN Accounts um Faktor 2 schlaegt. Dadurch zaehlt ein Banger von einem 3k-Account genauso wie einer von 300k.",
     "outlier_schwelle": 2.0,
     "gewicht_outlier": 0.55,
     "gewicht_reichweite": 0.25,
@@ -45,7 +56,7 @@
   },
 
   "kapazitaet": {
-    "_kommentar": "Deine reale Kapazitaet. Der Wochenplan plant nie mehr als das.",
+    "_kommentar": "Der Drehplan plant nie mehr ein als das.",
     "posts_pro_woche": 2,
     "slots": ["Dienstag", "Freitag"]
   },
