@@ -6,7 +6,12 @@
   ],
   "watchlist": {
     "_kommentar": "Wird woechentlich gescannt. Startbelegung stammt aus dem ersten Hashtag-Lauf und ist ungeprueft - nach dem ersten echten Scan aussortieren, was nicht passt.",
-    "regional": [],
+    "regional": [
+      "osipova.studio",
+      "studiocimi",
+      "medienproduktion2.0",
+      "michel_fotofilm"
+    ],
     "branche": [
       "filmovo.de",
       "purevisuals.de",
