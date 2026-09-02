@@ -1,11 +1,14 @@
 {
   "_kommentar": "AYBORN Content-Radar. Handles ohne @. Alles hier ist frei anpassbar.",
-
   "eigener_account": "ayborn.media",
-
   "watchlist": {
     "_kommentar": "Wird woechentlich gescannt. Startbelegung stammt aus dem ersten Hashtag-Lauf und ist ungeprueft - nach dem ersten echten Scan aussortieren, was nicht passt.",
-    "regional": [],
+    "regional": [
+      "osipova.studio",
+      "studiocimi",
+      "medienproduktion2.0",
+      "michel_fotofilm"
+    ],
     "branche": [
       "filmovo.de",
       "purevisuals.de",
@@ -20,7 +23,6 @@
     ],
     "referenz": []
   },
-
   "discovery": {
     "_kommentar": "Zwei Stufen: Hashtags liefern nur Kandidaten-Namen (dort gibt es keine Views), die besten werden danach als Profile richtig gemessen.",
     "aktiv": true,
@@ -39,13 +41,11 @@
     "min_follower": 500,
     "max_follower": 400000
   },
-
   "scan": {
     "reels_pro_account": 10,
     "zeitfenster_tage": 60,
     "_kommentar": "16 Accounts x 10 Beitraege + Follower-Abruf = ca. 176 Ergebnisse = 0,48 USD pro Woche."
   },
-
   "scoring": {
     "_kommentar": "Ein Reel gilt als Ausreisser, wenn es den Median seines EIGENEN Accounts um Faktor 2 schlaegt. Dadurch zaehlt ein Banger von einem 3k-Account genauso wie einer von 300k.",
     "outlier_schwelle": 2.0,
@@ -54,13 +54,14 @@
     "gewicht_aktualitaet": 0.2,
     "halbwertszeit_tage": 21
   },
-
   "kapazitaet": {
     "_kommentar": "Der Drehplan plant nie mehr ein als das.",
     "posts_pro_woche": 2,
-    "slots": ["Dienstag", "Freitag"]
+    "slots": [
+      "Dienstag",
+      "Freitag"
+    ]
   },
-
   "apify": {
     "actor": "apify~instagram-scraper",
     "token_env": "APIFY_TOKEN"
