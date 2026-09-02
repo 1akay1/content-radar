@@ -1,0 +1,57 @@
+{
+  "_kommentar": "AYBORN Content-Radar - Konfiguration. Handles ohne @. Alles hier ist frei anpassbar.",
+
+  "eigener_account": "ayborn.media",
+
+  "watchlist": {
+    "_kommentar": "Accounts, die woechentlich gescannt werden. Start leer/klein - die Discovery unten fuellt sie automatisch auf.",
+    "regional": [],
+    "branche": [],
+    "referenz": []
+  },
+
+  "discovery": {
+    "_kommentar": "Findet neue Accounts selbst, statt dass du 16 Handles raten musst. Ergebnisse landen als Vorschlaege im Dashboard.",
+    "aktiv": true,
+    "hashtags": [
+      "schwerin",
+      "mecklenburgvorpommern",
+      "videografschwerin",
+      "imagefilm",
+      "videoproduktion",
+      "unternehmensfilm",
+      "hochzeitsvideo",
+      "dronefootage"
+    ],
+    "orte": ["Schwerin", "Rostock", "Wismar", "Lübeck"],
+    "max_pro_hashtag": 15,
+    "min_follower": 800,
+    "max_follower": 400000
+  },
+
+  "scan": {
+    "reels_pro_account": 12,
+    "zeitfenster_tage": 60,
+    "_kommentar": "12 Reels x Accounts = Kosten. 16 Accounts x 12 = 192 Ergebnisse/Woche = ca. 0,52 USD - passt in den Apify-Free-Tier (5 USD/Monat)."
+  },
+
+  "scoring": {
+    "_kommentar": "So wird ein Outlier definiert. Ein Reel ist ein Outlier, wenn es den Median seines EIGENEN Accounts deutlich schlaegt - dadurch zaehlen auch Banger von kleinen Accounts.",
+    "outlier_schwelle": 2.0,
+    "gewicht_outlier": 0.55,
+    "gewicht_reichweite": 0.25,
+    "gewicht_aktualitaet": 0.2,
+    "halbwertszeit_tage": 21
+  },
+
+  "kapazitaet": {
+    "_kommentar": "Deine reale Kapazitaet. Der Wochenplan plant nie mehr als das.",
+    "posts_pro_woche": 2,
+    "slots": ["Dienstag", "Freitag"]
+  },
+
+  "apify": {
+    "actor": "apify~instagram-scraper",
+    "token_env": "APIFY_TOKEN"
+  }
+}
