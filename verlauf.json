@@ -124,5 +124,19 @@
       }
     },
     "follower_gesamt": 140
+  },
+  {
+    "datum": "2026-11-02",
+    "accounts": {
+      "ayborn.media": {
+        "follower": 37,
+        "beitraege": 18
+      },
+      "akay_sn": {
+        "follower": 105,
+        "beitraege": 26
+      }
+    },
+    "follower_gesamt": 142
   }
 ]
